@@ -7,6 +7,12 @@ required
 client : X11, ssh config
 server : zsh, xclip or xsel
 
+## installation
+```
+brew tap umaumax/clip-share
+brew install clip-share
+```
+
 ## preparation
 
 ### client
