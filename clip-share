@@ -1,6 +1,8 @@
 #!/bin/sh
+dir=$(command ls -l $(dirname $0)/${0##*/} | cut -d">" -f2 | tr -d ' ')
+
 cd $(dirname $0)
-#exit 0
+cd "${dir%/*}/../libexec"
 
 if [ -z "$1" ]
 then
