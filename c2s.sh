@@ -40,10 +40,28 @@ elif [ -n "$_Linux" ]; then
 fi
 
 if [ -n "$_Darwin" ]; then
-	alias c='pbcopy'
-	alias p='pbpaste'
-	alias b64e='base64'
-	alias b64d='base64 -D'
+	running_shell=$(ps $$ | tail -n 1 | sed "s/\s\+/ /g" | tr -s ' ' | cut -d" " -f5)
+	running_shell=${running_shell##*/}
+
+	if [ "$running_shell" = "bash" ]; then
+		c() {
+			pbcopy $@
+		}
+		p() {
+			pbpaste $@
+		}
+		b64e() {
+			base64 $@
+		}
+		b64d() {
+			base64 -D $@
+		}
+	else
+		alias c='pbcopy'
+		alias p='pbpaste'
+		alias b64e='base64'
+		alias b64d='base64 -D'
+	fi
 fi
 
 # check clipboard
