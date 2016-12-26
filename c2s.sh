@@ -1,9 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 # run on server
 
 _log() {
 	true
-	#	echo "$@" 1>&2
+	# echo "$@" 1>&2
 }
 
 if [ -n "$1" ]; then
@@ -24,19 +24,54 @@ if [ -n "$_Ubuntu" ]; then
 	# DISPLAY=Xサーバー名:ディスプレイ番号.スクリーン番号
 	# UbuntuではDISPLAYの値ごとにclipboardが異なる
 	export DISPLAY=':0'
-	alias c='xsel -bi'
-	alias p='xsel -bo'
-	alias b64e='stdbuf -i0 -o0 -e0 base64'
-	alias b64d='base64 -d'
+
+	running_shell=$(readlink /proc/$$/exe)
+	running_shell=${running_shell##*/}
+	if [ "$running_shell" = "bash" ]; then
+		c() {
+			xsel -bi $@
+		}
+		p() {
+			xsel -bo $@
+		}
+		b64e() {
+			stdbuf -i0 -o0 -e0 base64 $@
+		}
+		b64d() {
+			base64 -d $@
+		}
+	else
+		alias c='xsel -bi'
+		alias p='xsel -bo'
+		alias b64e='stdbuf -i0 -o0 -e0 base64'
+		alias b64d='base64 -d'
+	fi
 elif [ -n "$_Linux" ]; then
 	# DISPLAY=Xサーバー名:ディスプレイ番号.スクリーン番号
 	#	if [ ! -n "$DISPLAY" ]; then
 	#	export DISPLAY=':0'
 	#	fi
-	alias c='xclip -i'
-	alias p='xclip -o'
-	alias b64e='stdbuf -i0 -o0 -e0 base64'
-	alias b64d='base64 -d'
+	running_shell=$(readlink /proc/$$/exe)
+	running_shell=${running_shell##*/}
+	if [ "$running_shell" = "bash" ]; then
+		c() {
+			xclip -i $@
+		}
+		p() {
+			xclip -o $@
+		}
+		b64e() {
+			stdbuf -i0 -o0 -e0 base64 $@
+		}
+		b64d() {
+			base64 -d $@
+		}
+	else
+		alias c='xclip -i'
+		alias p='xclip -o'
+		alias b64e='base64'
+		alias b64d='base64 -d'
+	fi
 fi
 
 if [ -n "$_Darwin" ]; then
@@ -86,11 +121,11 @@ clipboard=""
 while true; do
 	tmp=$(p)
 	if [ "$clipboard" != "$tmp" ]; then
-		clipboard=$tmp
+		clipboard="$tmp"
 		ret=$(echo "$clipboard" | b64e)
 		printf "%s\n" "$ret"
 		printf "\n"
-		_log "[$host] send [$clipboard]"
+		_log "[$host] send [$clipboard] [$ret]"
 	fi
 	sleep "$interval"
 done

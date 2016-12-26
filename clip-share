@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 dir=$(command ls -l $(dirname $0)/${0##*/} | cut -d">" -f2 | tr -d ' ')
 
 cd $(dirname $0)

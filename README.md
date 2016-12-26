@@ -1,12 +1,5 @@
 # clip share command
 
-## TODO
-クリップボードに
-```
-var hoge = "\n";
-```
-のような内容を貼り付けるとマシン同士のやりとりを行っている最中に改行として解釈されてしまう
-
 クライアント/サーバ間のクリップボード共有コマンド
 
 required
@@ -41,6 +34,13 @@ ForwardX11Trusted yes
 ```
 
 ### server
+
+in Ubuntu
+
+maybe need
+```
+export DISPLAY=':0'
+```
 
 #### clipboard command
 ```
@@ -83,6 +83,13 @@ alias vim='vimx'
 * CentOSの場合にはopen可能なDISPLAYを指定しないとclipboardは機能しない
 * 証明書認証のサーバでないと途中のパスワード入力でつまずくかも...(未検証)
 * サーバ上に一時ファイル"~/.clipboard.tmp.sh"を作成する(sshコマンドでファイルのshell実行とpipeの複数ができればこの一時ファイルは不要)
+
+## NOTE
+クリップボードに
+```
+var hoge = "\n";
+```
+としたとき、OS-shellの組み合わせで変数展開が異なる(bashに統一すると挙動が安定する)
 
 ## References
 [ssh - Run local script with local input file on remote host - Unix & Linux Stack Exchange]( http://unix.stackexchange.com/questions/313000/run-local-script-with-local-input-file-on-remote-host )
