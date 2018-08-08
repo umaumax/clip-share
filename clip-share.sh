@@ -2,7 +2,7 @@
 function is_remote() { [[ $CLIPSHARE_MODE == remote ]]; }
 function is_local() { [[ -z $CLIPSHARE_MODE ]] || [[ $CLIPSHARE_MODE == local ]]; }
 
-is_remote || is_local || (echo "set CLIPSHARE_MODE [local] or [remote]" && exit 1)
+! is_remote && ! is_local && echo "set CLIPSHARE_MODE [local] or [remote]" && exit 1
 is_local && [[ $# == 0 ]] && echo "$0 <remote host>" && exit 1
 is_local && host="$1"
 
