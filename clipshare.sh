@@ -32,7 +32,7 @@ fi
 if [[ "$OS" =~ "Windows" ]]; then
 	if [[ -e /dev/clipboard ]]; then
 		alias p='(cat /dev/clipboard)'
-		alias _c='(cat > /dev/clipboard)'
+		alias c='(cat > /dev/clipboard)'
 	else
 		cmdcheck gopaste && alias p='gopaste'
 		cmdcheck gocopy && alias c='gocopy'
