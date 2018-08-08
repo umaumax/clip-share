@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 function is_remote() { [[ $CLIPSHARE_MODE == remote ]]; }
-function is_local() { [[ $CLIPSHARE_MODE == local ]]; }
+function is_local() { [[ -z $CLIPSHARE_MODE ]] || [[ $CLIPSHARE_MODE == local ]]; }
 
 is_remote || is_local || (echo "set CLIPSHARE_MODE [local] or [remote]" && exit 1)
 is_local && [[ $# == 0 ]] && echo "$0 <remote host>" && exit 1
@@ -8,6 +8,9 @@ is_local && host="$1"
 
 is_remote && export DISPLAY=':0'
 
+cmdcheck() { type >/dev/null 2>&1 "$@"; }
+
+# for alias
 shopt -s expand_aliases
 if [[ $(uname) == "Darwin" ]]; then
 	alias c='pbcopy'
@@ -16,14 +19,24 @@ if [[ $(uname) == "Darwin" ]]; then
 	alias base64decode='base64 -D'
 fi
 if [[ $(uname -a) =~ "Ubuntu" ]]; then
-	alias c='xsel -bi'
-	alias p='xsel -bo'
+	if cmdcheck xclip; then
+		alias c='xclip -sel clip'
+		alias p='xclip -o -sel clip'
+	elif cmdcheck xsel; then
+		alias c='xsel --clipboard --input'
+		alias p='xsel --clipboard --output'
+	fi
 	alias base64encode='base64 -w 0'
 	alias base64decode='base64 -d'
 fi
 if [[ "$OS" =~ "Windows" ]]; then
-	alias p='gopaste'
-	alias c='gocopy'
+	if [[ -e /dev/clipboard ]]; then
+		alias p='(cat /dev/clipboard)'
+		alias _c='(cat > /dev/clipboard)'
+	else
+		cmdcheck gopaste && alias p='gopaste'
+		cmdcheck gocopy && alias c='gocopy'
+	fi
 	alias base64encode='base64 -w 0'
 	alias base64decode='base64 -d'
 fi
@@ -64,7 +77,8 @@ if is_remote; then
 fi
 
 if is_local; then
+	# remote server
 	# base64 -d: linux
 	# base64 -D: darwin
-	watch_loop | ssh $host "bash -c 'CLIPSHARE_MODE=remote && eval \$(echo $(cat $0 | base64encode) | base64 -D)'" | pipe_loop
+	watch_loop | ssh $host "bash -c 'CLIPSHARE_MODE=remote && eval \"\$(echo $(cat $0 | base64encode) | if [[ \$(uname) == Darwin ]]; then base64 -D; else base64 -d; fi)\"'" | pipe_loop
 fi
