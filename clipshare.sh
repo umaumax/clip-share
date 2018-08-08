@@ -64,5 +64,7 @@ if is_remote; then
 fi
 
 if is_local; then
-	watch_loop | LC_CODE=$(cat $0) ssh $host 'bash -c "CLIPSHARE_MODE=remote && eval $LC_CODE"' | pipe_loop
+	# base64 -d: linux
+	# base64 -D: darwin
+	watch_loop | ssh $host "bash -c 'CLIPSHARE_MODE=remote && eval \$(echo $(cat $0 | base64encode) | base64 -D)'" | pipe_loop
 fi
