@@ -8,6 +8,9 @@ for clipboard sharing between local and remote environment
 
 __Threre is no need to install tools at remote environment.__
 
+## FYI
+`wait loop (local) <-- ssh pipe --> pipe wait loop (remote) | clipboard wait loop (remote) <-- ssh pipe --> pipe loop (local)`
+
 ## FMI
 [ssh - Run local script with local input file on remote host - Unix & Linux Stack Exchange]( http://unix.stackexchange.com/questions/313000/run-local-script-with-local-input-file-on-remote-host )
 
