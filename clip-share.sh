@@ -58,7 +58,7 @@ function pipe_loop() {
 
 # watch clipboard
 function watch_loop() {
-	interval=1
+	interval="0.25"
 	clipboard_encoded=$(p | base64encode)
 	while true; do
 		clipboard_encoded_tmp=$(p | base64encode)
