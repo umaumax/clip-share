@@ -6,7 +6,7 @@ function is_local() { [[ -z $CLIPSHARE_MODE ]] || [[ $CLIPSHARE_MODE == local ]]
 is_local && [[ $# == 0 ]] && echo "$0 <remote host>" && exit 1
 is_local && host="$1"
 
-is_remote && export DISPLAY=':0'
+is_remote && [[ -z $DISPLAY ]] && export DISPLAY=':0'
 
 cmdcheck() { type >/dev/null 2>&1 "$@"; }
 
@@ -43,13 +43,13 @@ fi
 
 alias log='echo 1>&2'
 
-clipboard_encoded=$(p | base64encode)
 # pipe wait loop
 function pipe_loop() {
+	local clipboard_encoded=$(p | base64encode)
 	while read LINE; do
-		clipboard_encoded_tmp="$LINE"
+		local clipboard_encoded_tmp="$LINE"
 		if [[ $clipboard_encoded != $clipboard_encoded_tmp ]]; then
-			clipboard_encoded="$clipboard_encoded_tmp"
+			local clipboard_encoded="$clipboard_encoded_tmp"
 			log "[$CLIPSHARE_MODE]:pipe_loop [$clipboard_encoded]($(echo $clipboard_encoded | base64decode))"
 			echo "$clipboard_encoded" | base64decode | c
 		fi
@@ -58,12 +58,12 @@ function pipe_loop() {
 
 # watch clipboard
 function watch_loop() {
-	interval="0.25"
-	clipboard_encoded=$(p | base64encode)
+	local interval="0.25"
+	local clipboard_encoded=""
 	while true; do
-		clipboard_encoded_tmp=$(p | base64encode)
+		local clipboard_encoded_tmp=$(p | base64encode)
 		if [[ "$clipboard_encoded" != "$clipboard_encoded_tmp" ]]; then
-			clipboard_encoded="$clipboard_encoded_tmp"
+			local clipboard_encoded="$clipboard_encoded_tmp"
 			# to local or remote
 			echo "$clipboard_encoded"
 			log "[$CLIPSHARE_MODE]:watch_loop [$clipboard_encoded]($(echo $clipboard_encoded | base64decode))"
