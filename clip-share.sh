@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-function is_remote() { [[ $CLIPSHARE_MODE == remote ]]; }
-function is_local() { [[ -z $CLIPSHARE_MODE ]] || [[ $CLIPSHARE_MODE == local ]]; }
+function is_remote() { [[ $CLIPSHARE_MODE == "remote" ]]; }
+function is_local() { [[ -z $CLIPSHARE_MODE ]] || [[ $CLIPSHARE_MODE == "local" ]]; }
 
 ! is_remote && ! is_local && echo "set CLIPSHARE_MODE [local] or [remote]" && exit 1
 is_local && [[ $# == 0 ]] && echo "$0 <remote host>" && exit 1
 is_local && host="$1"
+is_local && CLIPSHARE_MODE='local'
 
 is_remote && [[ -z $DISPLAY ]] && export DISPLAY=':0'
 
@@ -48,7 +49,7 @@ function pipe_loop() {
 	local clipboard_encoded=$(p | base64encode)
 	while read LINE; do
 		local clipboard_encoded_tmp="$LINE"
-		if [[ $clipboard_encoded != $clipboard_encoded_tmp ]]; then
+		if [[ -n $clipboard_encoded_tmp ]] && [[ $clipboard_encoded != $clipboard_encoded_tmp ]]; then
 			local clipboard_encoded="$clipboard_encoded_tmp"
 			log "[$CLIPSHARE_MODE]:pipe_loop [$clipboard_encoded]($(echo $clipboard_encoded | base64decode))"
 			echo "$clipboard_encoded" | base64decode | c
@@ -62,7 +63,7 @@ function watch_loop() {
 	local clipboard_encoded=""
 	while true; do
 		local clipboard_encoded_tmp=$(p | base64encode)
-		if [[ "$clipboard_encoded" != "$clipboard_encoded_tmp" ]]; then
+		if [[ -n $clipboard_encoded_tmp ]] && [[ "$clipboard_encoded" != "$clipboard_encoded_tmp" ]]; then
 			local clipboard_encoded="$clipboard_encoded_tmp"
 			# to local or remote
 			echo "$clipboard_encoded"
