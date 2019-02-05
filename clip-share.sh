@@ -47,7 +47,7 @@ alias log='echo 1>&2'
 # pipe wait loop
 function pipe_loop() {
 	local clipboard_encoded=$(p | base64encode)
-	while read LINE; do
+	while read -r LINE; do
 		local clipboard_encoded_tmp="$LINE"
 		if [[ -n $clipboard_encoded_tmp ]] && [[ $clipboard_encoded != $clipboard_encoded_tmp ]]; then
 			local clipboard_encoded="$clipboard_encoded_tmp"
