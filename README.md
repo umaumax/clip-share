@@ -9,7 +9,8 @@ for clipboard sharing between local and remote environment
 __Threre is no need to install tools at remote environment.__
 
 ## Sequence Diagram
-```uml
+
+```plantuml
 @startuml
 
 title clip-share
