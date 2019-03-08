@@ -8,6 +8,39 @@ for clipboard sharing between local and remote environment
 
 __Threre is no need to install tools at remote environment.__
 
+## Sequence Diagram
+```uml
+@startuml
+
+title clip-share
+
+participant "local" as Local
+participant "remote" as Remote
+
+== ssh ==
+
+loop monitoring clipboard
+    opt if local local clipboard has changed
+        activate Local
+        Local -> Remote: send clipboard via ssh tunnel
+        note right #lightgreen: base64\nformat
+        Remote -> Remote: update clipboard
+    end
+
+    opt if remote clipboard has changed
+        activate Remote
+        Remote -> Local: send clipboard via ssh tunnel
+        note left #lightgreen: base64\nformat
+        Local -> Local: update clipboard
+    end
+
+    break ctrl-c
+    end
+end
+
+@enduml
+```
+
 ## FYI
 `wait loop (local) <-- ssh pipe --> pipe wait loop (remote) | clipboard wait loop (remote) <-- ssh pipe --> pipe loop (local)`
 
