@@ -57,15 +57,16 @@ alias log='echo 1>&2'
 # output: only log(stderr)
 # description: send data via clipboard to watch_loop()
 function pipe_loop() {
-  local clipboard_encoded
-  clipboard_encoded=$(p | base64encode)
-  local clipboard_encoded_tmp
+  local clipboard_encoded_now
+  local clipboard_encoded_new
   while read -r LINE; do
-    clipboard_encoded_tmp="$LINE"
-    if [[ -n $clipboard_encoded_tmp ]] && [[ $clipboard_encoded != "$clipboard_encoded_tmp" ]]; then
-      clipboard_encoded="$clipboard_encoded_tmp"
-      log "[$CLIPSHARE_MODE]:pipe_loop [$clipboard_encoded]($(printf '%s\n' "$clipboard_encoded" | base64decode))"
-      printf '%s\n' "$clipboard_encoded" | base64decode | c
+    # NOTE: compare current clipboard to prevent extra update
+    #         because extra update can be drop MIME data
+    clipboard_encoded_now=$(p | base64encode)
+    clipboard_encoded_new="$LINE"
+    if [[ -n $clipboard_encoded_new ]] && [[ $clipboard_encoded_now != "$clipboard_encoded_new" ]]; then
+      log "[$CLIPSHARE_MODE][pipe_loop][pipe to clipboard] data:[$clipboard_encoded_new]($(printf '%s\n' "$clipboard_encoded_new" | base64decode))"
+      printf '%s\n' "$clipboard_encoded_new" | base64decode | c
     fi
   done
 }
@@ -76,15 +77,15 @@ function pipe_loop() {
 # description: pooling data via clipboard and send to pipe_loop() via pipe output
 function watch_loop() {
   local interval="0.25"
-  local clipboard_encoded=""
-  local clipboard_encoded_tmp
+  local clipboard_encoded_now=""
+  local clipboard_encoded_new
   while true; do
-    clipboard_encoded_tmp=$(p | base64encode)
-    if [[ -n $clipboard_encoded_tmp ]] && [[ "$clipboard_encoded" != "$clipboard_encoded_tmp" ]]; then
-      clipboard_encoded="$clipboard_encoded_tmp"
-      # to local or remote
-      printf '%s\n' "$clipboard_encoded"
-      log "[$CLIPSHARE_MODE]:watch_loop [$clipboard_encoded]($(printf '%s\n' "$clipboard_encoded" | base64decode))"
+    clipboard_encoded_new=$(p | base64encode)
+    if [[ -n $clipboard_encoded_new ]] && [[ "$clipboard_encoded_now" != "$clipboard_encoded_new" ]]; then
+      clipboard_encoded_now="$clipboard_encoded_new"
+      # to local or remote pipe output
+      printf '%s\n' "$clipboard_encoded_now"
+      log "[$CLIPSHARE_MODE][watch_loop][clipboard to pipe] data:[$clipboard_encoded_now]($(printf '%s\n' "$clipboard_encoded_now" | base64decode))"
     fi
     sleep "$interval"
   done
