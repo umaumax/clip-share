@@ -8,6 +8,9 @@ for clipboard sharing between local and remote environment
 
 __Threre is no need to install tools at remote environment.__
 
+## environment variable
+* `CLIPSHARE_SSH_RETRY_INTERVAL`: default value is `3(sec)`
+
 ## Sequence Diagram
 
 ```plantuml
