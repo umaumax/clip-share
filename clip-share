@@ -1,15 +1,23 @@
 #!/usr/bin/env bash
+
 function is_remote() { [[ $CLIPSHARE_MODE == "remote" ]]; }
 function is_local() { [[ -z $CLIPSHARE_MODE ]] || [[ $CLIPSHARE_MODE == "local" ]]; }
 
-! is_remote && ! is_local && echo "set CLIPSHARE_MODE [local] or [remote]" && exit 1
-is_local && [[ $# == 0 ]] && echo "$0 <remote host>" && exit 1
-is_local && host="$1"
-is_local && CLIPSHARE_MODE='local'
+if is_local; then
+  if [[ $# == 0 ]]; then
+    echo 1>&2 "$0 <remote host>"
+    exit 1
+  fi
+  host="$1"
+  CLIPSHARE_MODE='local'
+elif is_remote; then
+  export DISPLAY=${DISPLAY:-':0'}
+else
+  echo 1>&2 "set CLIPSHARE_MODE [local] or [remote]"
+  exit 1
+fi
 
-is_remote && [[ -z $DISPLAY ]] && export DISPLAY=':0'
-
-cmdcheck() { type >/dev/null 2>&1 "$@"; }
+function cmdcheck() { type >/dev/null 2>&1 "$@"; }
 
 # for alias
 shopt -s expand_aliases
@@ -45,29 +53,38 @@ fi
 alias log='echo 1>&2'
 
 # pipe wait loop
+# input: base64 encoded line
+# output: only log(stderr)
+# description: send data via clipboard to watch_loop()
 function pipe_loop() {
-  local clipboard_encoded=$(p | base64encode)
+  local clipboard_encoded
+  clipboard_encoded=$(p | base64encode)
+  local clipboard_encoded_tmp
   while read -r LINE; do
-    local clipboard_encoded_tmp="$LINE"
-    if [[ -n $clipboard_encoded_tmp ]] && [[ $clipboard_encoded != $clipboard_encoded_tmp ]]; then
-      local clipboard_encoded="$clipboard_encoded_tmp"
-      log "[$CLIPSHARE_MODE]:pipe_loop [$clipboard_encoded]($(echo $clipboard_encoded | base64decode))"
-      echo "$clipboard_encoded" | base64decode | c
+    clipboard_encoded_tmp="$LINE"
+    if [[ -n $clipboard_encoded_tmp ]] && [[ $clipboard_encoded != "$clipboard_encoded_tmp" ]]; then
+      clipboard_encoded="$clipboard_encoded_tmp"
+      log "[$CLIPSHARE_MODE]:pipe_loop [$clipboard_encoded]($(printf '%s\n' "$clipboard_encoded" | base64decode))"
+      printf '%s\n' "$clipboard_encoded" | base64decode | c
     fi
   done
 }
 
 # watch clipboard
+# input: clipboard
+# output: base64 encoded line(stdout) and log(stderr)
+# description: pooling data via clipboard and send to pipe_loop() via pipe output
 function watch_loop() {
   local interval="0.25"
   local clipboard_encoded=""
+  local clipboard_encoded_tmp
   while true; do
-    local clipboard_encoded_tmp=$(p | base64encode)
+    clipboard_encoded_tmp=$(p | base64encode)
     if [[ -n $clipboard_encoded_tmp ]] && [[ "$clipboard_encoded" != "$clipboard_encoded_tmp" ]]; then
-      local clipboard_encoded="$clipboard_encoded_tmp"
+      clipboard_encoded="$clipboard_encoded_tmp"
       # to local or remote
-      echo "$clipboard_encoded"
-      log "[$CLIPSHARE_MODE]:watch_loop [$clipboard_encoded]($(echo $clipboard_encoded | base64decode))"
+      printf '%s\n' "$clipboard_encoded"
+      log "[$CLIPSHARE_MODE]:watch_loop [$clipboard_encoded]($(printf '%s\n' "$clipboard_encoded" | base64decode))"
     fi
     sleep "$interval"
   done
@@ -75,11 +92,10 @@ function watch_loop() {
 
 if is_remote; then
   pipe_loop | watch_loop
-fi
-
-if is_local; then
+elif is_local; then
   # remote server
   # base64 -d: linux
   # base64 -D: darwin
-  watch_loop | ssh $host "bash -c 'CLIPSHARE_MODE=remote && eval \"\$(echo $(cat $0 | base64encode) | if [[ \$(uname) == Darwin ]]; then base64 -D; else base64 -d; fi)\"'" | pipe_loop
+  # NOTE: send this script encoded by base64 and run at remote server
+  watch_loop | ssh "$host" "bash -c 'CLIPSHARE_MODE=remote && eval \"\$(echo $(cat "$0" | base64encode) | if [[ \$(uname) == Darwin ]]; then base64 -D; else base64 -d; fi)\"'" | pipe_loop
 fi
