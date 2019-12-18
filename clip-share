@@ -17,10 +17,13 @@ else
   exit 1
 fi
 
+drop_windows_cr=${CLIPSHARE_DROP_WINDOWS_CR:-1}
+
 function cmdcheck() { type >/dev/null 2>&1 "$@"; }
 
 # for alias
 shopt -s expand_aliases
+alias watch_loop_filter_cmd='command cat'
 if [[ $(uname) == "Darwin" ]]; then
   alias c='pbcopy'
   alias p='pbpaste'
@@ -48,6 +51,10 @@ if [[ "$OS" =~ "Windows" ]]; then
   fi
   alias base64encode='base64 -w 0'
   alias base64decode='base64 -d'
+
+  if [[ "$drop_windows_cr" != "0" ]]; then
+    alias watch_loop_filter_cmd='tr -d "\r"'
+  fi
 fi
 
 alias log='echo 1>&2'
@@ -80,7 +87,18 @@ function watch_loop() {
   local clipboard_encoded_now=""
   local clipboard_encoded_new
   while true; do
-    clipboard_encoded_new=$(p | base64encode)
+    clipboard_encoded_new=$(
+      p | watch_loop_filter_cmd | base64encode
+      exit ${PIPESTATUS[0]:-$pipestatus[$((0 + 1))]}
+    )
+    if [[ $? != 0 ]]; then
+      # NOTE: for avoid 'Error: target STRING not available'
+      # FYI: [ClipboardPersistence \- Ubuntu Wiki]( https://wiki.ubuntu.com/ClipboardPersistence )
+      log "[$CLIPSHARE_MODE][watch_loop][resume clipboard] data:[$clipboard_encoded_now]($(printf '%s\n' "$clipboard_encoded_now" | base64decode))"
+      printf '%s\n' "$clipboard_encoded_now" | base64decode | c
+      continue
+    fi
+
     if [[ -n $clipboard_encoded_new ]] && [[ "$clipboard_encoded_now" != "$clipboard_encoded_new" ]]; then
       clipboard_encoded_now="$clipboard_encoded_new"
       # to local or remote pipe output
