@@ -3,6 +3,8 @@
 function is_remote() { [[ $CLIPSHARE_MODE == "remote" ]]; }
 function is_local() { [[ -z $CLIPSHARE_MODE ]] || [[ $CLIPSHARE_MODE == "local" ]]; }
 
+force_use_zero_display=${CLIPSHARE_FORCE_USE_ZERO_DISPLAY:-1}
+
 if is_local; then
   if [[ $# == 0 ]]; then
     echo 1>&2 "$0 <remote host>"
@@ -10,6 +12,9 @@ if is_local; then
   fi
   host="$1"
   CLIPSHARE_MODE='local'
+  if [[ "$force_use_zero_display" != "0" ]]; then
+    export DISPLAY=${DISPLAY:-':0'}
+  fi
 elif is_remote; then
   export DISPLAY=${DISPLAY:-':0'}
 else
@@ -29,8 +34,7 @@ if [[ $(uname) == "Darwin" ]]; then
   alias p='pbpaste'
   alias base64encode='base64'
   alias base64decode='base64 -D'
-fi
-if [[ $(uname -a) =~ "Ubuntu" ]]; then
+elif [[ -v WSLENV ]] || [[ $(uname -a) =~ "Ubuntu" ]]; then
   if cmdcheck xclip; then
     alias c='xclip -sel clip'
     alias p='xclip -o -sel clip'
@@ -40,8 +44,7 @@ if [[ $(uname -a) =~ "Ubuntu" ]]; then
   fi
   alias base64encode='base64 -w 0'
   alias base64decode='base64 -d'
-fi
-if [[ "$OS" =~ "Windows" ]]; then
+elif [[ "$OS" =~ "Windows" ]]; then
   if [[ -e /dev/clipboard ]]; then
     alias p='(cat /dev/clipboard)'
     alias c='(cat > /dev/clipboard)'
@@ -118,5 +121,13 @@ elif is_local; then
   # base64 -d: linux
   # base64 -D: darwin
   # NOTE: send this script encoded by base64 and run at remote server
-  watch_loop | until ssh "$host" "bash -c 'CLIPSHARE_MODE=remote && eval \"\$(echo $(cat "$0" | base64encode) | if [[ \$(uname) == Darwin ]]; then base64 -D; else base64 -d; fi)\"'"; do sleep "$ssh_retry_interval"; done | pipe_loop
+
+  watch_loop | (
+    if [[ "$force_use_zero_display" != "0" ]]; then
+      unset DISPLAY
+    fi
+    until ssh "$host" "bash -c 'CLIPSHARE_MODE=remote && eval \"\$(echo $(cat "$0" | base64encode) | if [[ \$(uname) == Darwin ]]; then base64 -D; else base64 -d; fi)\"'"; do
+      sleep "$ssh_retry_interval"
+    done
+  ) | pipe_loop
 fi
