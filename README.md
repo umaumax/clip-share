@@ -8,9 +8,13 @@ for clipboard sharing between local and remote environment
 
 __Threre is no need to install tools at remote environment.__
 
+* `local host`: `windows(MSYS,WSL)`, `Mac OS X`, `Ubuntu`
+* `remote host`: `Mac OS X`, `Ubuntu`
+
 ## environment variable
-* `CLIPSHARE_SSH_RETRY_INTERVAL`: default value is `3(sec)`
+* `CLIPSHARE_SSH_RETRY_INTERVAL`: default value is `3[sec]`
 * `CLIPSHARE_FORCE_USE_ZERO_DISPLAY`: default value is `1(enable)`
+* `CLIPSHARE_DROP_WINDOWS_CR`: default value is `1(enable)`
 
 ## Sequence Diagram
 
