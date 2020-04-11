@@ -3,8 +3,6 @@
 function is_remote() { [[ $CLIPSHARE_MODE == "remote" ]]; }
 function is_local() { [[ -z $CLIPSHARE_MODE ]] || [[ $CLIPSHARE_MODE == "local" ]]; }
 
-force_use_zero_display=${CLIPSHARE_FORCE_USE_ZERO_DISPLAY:-1}
-
 if is_local; then
   if [[ $# == 0 ]]; then
     echo 1>&2 "$0 <remote host>"
@@ -12,9 +10,6 @@ if is_local; then
   fi
   host="$1"
   CLIPSHARE_MODE='local'
-  if [[ "$force_use_zero_display" != "0" ]]; then
-    export DISPLAY=${DISPLAY:-':0'}
-  fi
 elif is_remote; then
   export DISPLAY=${DISPLAY:-':0'}
 else
@@ -34,7 +29,8 @@ if [[ $(uname) == "Darwin" ]]; then
   alias p='pbpaste'
   alias base64encode='base64'
   alias base64decode='base64 -D'
-elif [[ -v WSLENV ]] || [[ $(uname -a) =~ "Ubuntu" ]]; then
+fi
+if [[ $(uname -a) =~ "Ubuntu" ]]; then
   if cmdcheck xclip; then
     alias c='xclip -sel clip'
     alias p='xclip -o -sel clip'
@@ -44,7 +40,8 @@ elif [[ -v WSLENV ]] || [[ $(uname -a) =~ "Ubuntu" ]]; then
   fi
   alias base64encode='base64 -w 0'
   alias base64decode='base64 -d'
-elif [[ "$OS" =~ "Windows" ]]; then
+fi
+if [[ "$OS" =~ "Windows" ]]; then
   if [[ -e /dev/clipboard ]]; then
     alias p='(cat /dev/clipboard)'
     alias c='(cat > /dev/clipboard)'
@@ -55,7 +52,7 @@ elif [[ "$OS" =~ "Windows" ]]; then
   alias base64encode='base64 -w 0'
   alias base64decode='base64 -d'
 
-  if [[ "$drop_windows_cr" != "0" ]]; then
+  if [[ -n "$drop_windows_cr" ]]; then
     alias watch_loop_filter_cmd='tr -d "\r"'
   fi
 fi
@@ -77,6 +74,8 @@ function pipe_loop() {
     if [[ -n $clipboard_encoded_new ]] && [[ $clipboard_encoded_now != "$clipboard_encoded_new" ]]; then
       log "[$CLIPSHARE_MODE][pipe_loop][pipe to clipboard] data:[$clipboard_encoded_new]($(printf '%s\n' "$clipboard_encoded_new" | base64decode))"
       printf '%s\n' "$clipboard_encoded_new" | base64decode | c
+      local tmp_dirpath="${TMPDIR:-/tmp}/clipshare_remote_update_flag"
+      touch "$tmp_dirpath"
     fi
   done
 }
@@ -86,7 +85,8 @@ function pipe_loop() {
 # output: base64 encoded line(stdout) and log(stderr)
 # description: pooling data via clipboard and send to pipe_loop() via pipe output
 function watch_loop() {
-  local interval="0.25"
+  # NOTE: if interval is bigger than about 0.1, this loop cannot get clipboard contents before 'Error: target STRING not available'
+  local interval="0.1"
   local clipboard_encoded_now=""
   local clipboard_encoded_new
   while true; do
@@ -104,9 +104,15 @@ function watch_loop() {
 
     if [[ -n $clipboard_encoded_new ]] && [[ "$clipboard_encoded_now" != "$clipboard_encoded_new" ]]; then
       clipboard_encoded_now="$clipboard_encoded_new"
-      # to local or remote pipe output
-      printf '%s\n' "$clipboard_encoded_now"
-      log "[$CLIPSHARE_MODE][watch_loop][clipboard to pipe] data:[$clipboard_encoded_now]($(printf '%s\n' "$clipboard_encoded_now" | base64decode))"
+      local tmp_dirpath="${TMPDIR:-/tmp}/clipshare_remote_update_flag"
+      if [[ -f "$tmp_dirpath" ]]; then
+        rm -f "$tmp_dirpath"
+        log "[$CLIPSHARE_MODE][watch_loop][updated by remote] data:[$clipboard_encoded_now]($(printf '%s\n' "$clipboard_encoded_now" | base64decode))"
+      else
+        log "[$CLIPSHARE_MODE][watch_loop][clipboard to pipe] data:[$clipboard_encoded_now]($(printf '%s\n' "$clipboard_encoded_now" | base64decode))"
+        # to local or remote pipe output
+        printf '%s\n' "$clipboard_encoded_now"
+      fi
     fi
     sleep "$interval"
   done
@@ -121,13 +127,5 @@ elif is_local; then
   # base64 -d: linux
   # base64 -D: darwin
   # NOTE: send this script encoded by base64 and run at remote server
-
-  watch_loop | (
-    if [[ "$force_use_zero_display" != "0" ]]; then
-      unset DISPLAY
-    fi
-    until ssh "$host" "bash -c 'CLIPSHARE_MODE=remote && eval \"\$(echo $(cat "$0" | base64encode) | if [[ \$(uname) == Darwin ]]; then base64 -D; else base64 -d; fi)\"'"; do
-      sleep "$ssh_retry_interval"
-    done
-  ) | pipe_loop
+  watch_loop | until ssh "$host" "bash -c 'CLIPSHARE_MODE=remote && eval \"\$(echo $(cat "$0" | base64encode) | if [[ \$(uname) == Darwin ]]; then base64 -D; else base64 -d; fi)\"'"; do sleep "$ssh_retry_interval"; done | pipe_loop
 fi
