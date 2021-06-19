@@ -127,5 +127,5 @@ elif is_local; then
   # base64 -d: linux
   # base64 -D: darwin
   # NOTE: send this script encoded by base64 and run at remote server
-  watch_loop | until ssh "$host" "bash -c 'CLIPSHARE_MODE=remote && eval \"\$(echo $(cat "$0" | base64encode) | if [[ \$(uname) == Darwin ]]; then base64 -D; else base64 -d; fi)\"'"; do sleep "$ssh_retry_interval"; done | pipe_loop
+  watch_loop | until ssh "$host" "bash -c 'CLIPSHARE_MODE=remote bash <(echo $(cat "$0" | base64encode) | if [[ \$(uname) == Darwin ]]; then base64 -D; else base64 -d; fi)'"; do sleep "$ssh_retry_interval"; done | pipe_loop
 fi
