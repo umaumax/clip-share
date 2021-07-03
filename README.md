@@ -17,7 +17,7 @@ __Threre is no need to install tools at remote environment.__
 
 ## Sequence Diagram
 
-```plantuml
+```uml
 @startuml
 
 title clip-share
