@@ -76,6 +76,8 @@ function pipe_loop() {
       printf '%s\n' "$clipboard_encoded_new" | base64decode | c
       local tmp_dirpath="${TMPDIR:-/tmp}/clipshare_remote_update_flag"
       touch "$tmp_dirpath"
+    else
+      log "[$CLIPSHARE_MODE][pipe_loop][ignore pipe] data:[$clipboard_encoded_new]($(printf '%s\n' "$clipboard_encoded_new" | base64decode))"
     fi
   done
 }
