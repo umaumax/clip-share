@@ -17,36 +17,25 @@ __Threre is no need to install tools at remote environment.__
 
 ## Sequence Diagram
 
-```uml
-@startuml
+``` mermaid
+sequenceDiagram
+    participant local
+    participant remote
 
-title clip-share
+    loop monitoring clipboard with ssh
+        opt if local local clipboard has changed
+            local->>remote: send clipboard via ssh tunnel
+            Note right of remote: base64 format
+            remote ->> remote: update clipboard
+        end
+        opt if remote clipboard has changed
+            remote ->> local: send clipboard via ssh tunnel
+            Note left of local: base64 format
+            local ->> local: update clipboard
+        end
 
-participant "local" as Local
-participant "remote" as Remote
-
-== ssh ==
-
-loop monitoring clipboard
-    opt if local local clipboard has changed
-        activate Local
-        Local -> Remote: send clipboard via ssh tunnel
-        note right #lightgreen: base64\nformat
-        Remote -> Remote: update clipboard
+        Note left of local: break by ctrl-c
     end
-
-    opt if remote clipboard has changed
-        activate Remote
-        Remote -> Local: send clipboard via ssh tunnel
-        note left #lightgreen: base64\nformat
-        Local -> Local: update clipboard
-    end
-
-    break ctrl-c
-    end
-end
-
-@enduml
 ```
 
 ## FYI
