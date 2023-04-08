@@ -25,8 +25,9 @@ function cmdcheck() { type >/dev/null 2>&1 "$@"; }
 shopt -s expand_aliases
 alias watch_loop_filter_cmd='command cat'
 if [[ $(uname) == "Darwin" ]]; then
-  alias c='pbcopy'
-  alias p='pbpaste'
+  export PATH="$PATH:/opt/homebrew/bin"
+  alias c='nkf -w | __CF_USER_TEXT_ENCODING=0x$(printf %x $(id -u)):0x08000100:14 pbcopy'
+  alias p='pbpaste | nkf -w'
   alias base64encode='base64'
   alias base64decode='base64 -D'
 fi
