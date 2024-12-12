@@ -30,8 +30,7 @@ if [[ $(uname) == "Darwin" ]]; then
   alias p='pbpaste | nkf -w'
   alias base64encode='base64'
   alias base64decode='base64 -D'
-fi
-if [[ $(uname -a) =~ "Ubuntu" ]]; then
+elif [[ $(uname -a) =~ "Linux" ]]; then
   if cmdcheck xclip; then
     alias c='xclip -sel clip'
     alias p='xclip -o -sel clip'
@@ -41,8 +40,7 @@ if [[ $(uname -a) =~ "Ubuntu" ]]; then
   fi
   alias base64encode='base64 -w 0'
   alias base64decode='base64 -d'
-fi
-if [[ "$OS" =~ "Windows" ]]; then
+elif [[ "$OS" =~ "Windows" ]]; then
   if [[ -e /dev/clipboard ]]; then
     alias p='(cat /dev/clipboard)'
     alias c='(cat > /dev/clipboard)'
@@ -56,6 +54,9 @@ if [[ "$OS" =~ "Windows" ]]; then
   if [[ -n "$drop_windows_cr" ]]; then
     alias watch_loop_filter_cmd='tr -d "\r"'
   fi
+else
+  echo 1>&2 "Unsupported arch '$(uname -a)'"
+  exit 1
 fi
 
 alias log='echo 1>&2'

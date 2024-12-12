@@ -6,8 +6,8 @@ for clipboard sharing between local and remote environment
 1. install at local environment
 1. `clip-share.sh <host name at ssh config>`
 
-* `local host`: `windows(MSYS,WSL)`, `Mac OS X`, `Ubuntu`
-* `remote host`: `Mac OS X`, `Ubuntu`
+* `local host`: `windows(MSYS,WSL)`, `Mac OS X`, `Linux`
+* `remote host`: `Mac OS X`, `Linux`
 
 __Threre is no need to install any tools without Mac OS X environment.__
 (`Mac OS X` require `nkf` tool, )
